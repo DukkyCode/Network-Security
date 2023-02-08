@@ -14,7 +14,7 @@ class SetupServer:
         # Bind thee socket to the port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind(self.host, self.port)
+        self.server.bind((self.host, self.port))
 
         # Listen for incoming
         self.server.listen(5)
@@ -67,7 +67,7 @@ class SetupClient:
         # Bind thee socket to the port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.connect(self.host, self.port)
+        self.server.connect((self.host, self.port))
 
         # Read and Write File Descriptor
         self.Rd = [self.server, sys.stdin]
