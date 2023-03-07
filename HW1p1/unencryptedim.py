@@ -11,7 +11,7 @@ class SetupServer:
         self.host = 'localhost'
         self.port = 9999
 
-	    #Terminate Signal Handler
+        # Terminate Signal Handler
         signal.signal(signal.SIGINT, self.handler)
 
         # Bind thee socket to the port
@@ -40,8 +40,8 @@ class SetupServer:
                     msg = s.readline()
                     if msg == "":
                         break
-                    
-                    #If there is no connection of client send error
+
+                    # If there is no connection of client send error
                     if conn in self.Rd:
                         conn.sendall(msg.encode('utf-8'))
                     else:
@@ -65,9 +65,10 @@ class SetupServer:
                         self.Rd.remove(s)
                         s.close()
 
-    def handler(self,sig,frame):
+    def handler(self, sig, frame):
         sys.exit(0)
         self.server.close()
+
 
 class SetupClient:
     def __init__(self, host):
@@ -75,7 +76,7 @@ class SetupClient:
         self.host = host
         self.port = 9999
 
-	    #Terminate Signal Handler
+        # Terminate Signal Handler
         signal.signal(signal.SIGINT, self.handler)
 
         # Bind thee socket to the port
@@ -105,8 +106,8 @@ class SetupClient:
                     if msg == "":
                         break
                     self.server.sendall(msg.encode('utf-8'))
-    
-    def handler(self,sig,frame):
+
+    def handler(self, sig, frame):
         self.server.close()
         sys.exit(0)
 
