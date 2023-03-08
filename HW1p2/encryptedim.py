@@ -7,6 +7,12 @@ import signal
 from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 
+
+#Global Variables
+global iv
+global encryptor
+global decryptor
+
 # Padding and Unpadding Scheme of PKCS#7
 # Padding Scheme
 def pad(msg, block_size):
@@ -20,13 +26,17 @@ def unpad(msg):
     return msg[:-pad_size]
     
 class SetupServer:
-    def __init__(self):
+    def __init__(self, confkey, authkey):
         # Set up host and local port
         self.host = 'localhost'
         self.port = 9999
 
         # Terminate Signal Handler
         signal.signal(signal.SIGINT, self.handler)
+
+        #Initialize configuration key and authentication key
+        self.confkey = confkey.encode('utf-8')
+        self.authkey = authkey.encode('utf-8')
 
         # Bind thee socket to the port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,13 +61,32 @@ class SetupServer:
 
                 # If s is standard input
                 elif s is sys.stdin:
+                    iv = os.urandom(16)
                     msg = s.readline()
                     if msg == "":
                         break
 
                     # If there is no connection of client send error
                     if conn in self.Rd:
-                        conn.sendall(msg.encode('utf-8'))
+                        encryptor = AES.new(self.confkey, AES.MODE_CBC, iv)
+                        
+                        #Encrypt Message Length
+                        msg_len = str(len(msg))
+                        pad_msglen = pad(msg_len, AES.block_size)
+                        msg_len = encryptor.encrypt(pad_msglen.encode('utf-8'))
+
+                        #Encrypt Message
+                        pad_msg = pad(msg, AES.block_size)
+                        msg = encryptor.encrypt(pad_msg.encode('utf-8'))
+
+                        #Generate MAC
+                        hmac1 = HMAC.new(self.authkey, iv + msg_len, digestmod= SHA256).digest()
+                        hmac2 = HMAC.new(self.authkey, msg, digestmod= SHA256).digest()
+
+                        #Sending Message
+                        message = iv + msg_len + hmac1 + msg + hmac2
+
+                        conn.sendall(message)
                     else:
                         print("No client connection")
                         break
@@ -65,8 +94,31 @@ class SetupServer:
                 else:
                     data = s.recv(1024)
                     if data:
-                        data = data.decode('utf-8')
-                        sys.stdout.write(data)
+                        iv = data[:16]
+                        msg_len = data[16:32]
+                        hmac1 = data[32:64]
+                        msg = data[64:-32]
+                        hmac2 = data[-32:]
+
+                        decryptor = AES.new(self.confkey, AES.MODE_CBC, iv)
+
+                        hmac1_verify = HMAC.new(self.authkey, iv + msg_len, digestmod=SHA256).digest()
+                        hmac2_verify = HMAC.new(self.authkey, msg, digestmod=SHA256).digest()
+
+                        if(hmac1_verify != hmac1) or (hmac2_verify != hmac2):
+                            print("ERROR: HMAC verification failed")
+                            sys.exit(0)
+                        
+                        temp = decryptor.decrypt(msg_len).decode('utf-8')
+                        msg_len = int(unpad(temp))
+
+                        temp = decryptor.decrypt(msg).decode('utf-8')
+                        msg = unpad(temp)
+
+                        if msg_len != len(msg):
+                            print("Length does not match")
+                            
+                        sys.stdout.write(msg)
                         sys.stdout.flush()
 
                         # if the connection is not in Write file description, then append it into the list
@@ -85,13 +137,17 @@ class SetupServer:
 
 
 class SetupClient:
-    def __init__(self, host):
+    def __init__(self, host, confkey, authkey):
         # Set up host and local port
         self.host = host
         self.port = 9999
 
         # Terminate Signal Handler
         signal.signal(signal.SIGINT, self.handler)
+
+        #Initialize configuration key and authentication key
+        self.confkey = confkey.encode('utf-8')
+        self.authkey = authkey.encode('utf-8')
 
         # Bind thee socket to the port
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -109,17 +165,65 @@ class SetupClient:
             for s in readable:
                 # If the connection is established
                 if s is self.server:
-                    data = s.recv(1024).decode('utf-8')
+                    data = s.recv(1024)
                     if data:
-                        sys.stdout.write(data)
+                        iv = data[:16]
+                        msg_len = data[16:32]
+                        hmac1 = data[32:64]
+                        msg = data[64:-32]
+                        hmac2 = data[-32:]
+
+                        decryptor = AES.new(self.confkey, AES.MODE_CBC, iv)
+
+                        hmac1_verify = HMAC.new(self.authkey, iv + msg_len, digestmod=SHA256).digest()
+                        hmac2_verify = HMAC.new(self.authkey, msg, digestmod=SHA256).digest()
+
+                        if hmac1_verify != hmac1:
+                            print("ERROR: HMAC verification failed")
+                            sys.exit(0)
+
+                        if hmac2_verify != hmac2:
+                            print("ERROR: HMAC verification failed")
+                            sys.exit(0)
+
+                        temp = decryptor.decrypt(msg_len).decode('utf-8')
+                        msg_len = int(unpad(temp))
+
+                        temp = decryptor.decrypt(msg).decode('utf-8')
+                        msg = unpad(temp)
+
+                        if msg_len != len(msg):
+                            print("Length does not match")
+                            
+                        sys.stdout.write(msg)
                         sys.stdout.flush()
                     else:
                         sys.exit(0)
                 else:
+                    iv = os.urandom(16)
                     msg = s.readline()
                     if msg == "":
                         break
-                    self.server.sendall(msg.encode('utf-8'))
+
+                    encryptor = AES.new(self.confkey, AES.MODE_CBC, iv)
+                    
+                    #Encrypt Message Length
+                    msg_len = str(len(msg))
+                    pad_msglen = pad(msg_len, AES.block_size)
+                    msg_len = encryptor.encrypt(pad_msglen.encode('utf-8'))
+
+                    #Encrypt Message
+                    pad_msg = pad(msg, AES.block_size)
+                    msg = encryptor.encrypt(pad_msg.encode('utf-8'))
+
+                    #Generate MAC
+                    hmac1 = HMAC.new(self.authkey, iv + msg_len, digestmod= SHA256).digest()
+                    hmac2 = HMAC.new(self.authkey, msg, digestmod= SHA256).digest()
+
+                    #Sending Message
+                    message = iv + msg_len + hmac1 + msg + hmac2
+
+                    self.server.sendall(message)
 
     def handler(self, sig, frame):
         self.server.close()
