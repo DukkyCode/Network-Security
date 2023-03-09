@@ -92,7 +92,7 @@ class SetupServer:
                         break
 
                 else:
-                    data = s.recv(1024)
+                    data = s.recv(2048)
                     if data:
                         iv = data[:16]
                         msg_len = data[16:32]
@@ -165,7 +165,7 @@ class SetupClient:
             for s in readable:
                 # If the connection is established
                 if s is self.server:
-                    data = s.recv(1024)
+                    data = s.recv(2048)
                     if data:
                         iv = data[:16]
                         msg_len = data[16:32]
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     # Argument Handler
     parser = argparse.ArgumentParser()
     parser.add_argument("--s", dest='server', default=False, action="store_true", help="server mode", required=False)
-    parser.add_argument("--c", dest='destination', type=str,help="client mode", required=False)
+    parser.add_argument("--c", dest='destination', default=localhost, type=str,help="client mode", required=False)
 
     parser.add_argument('--confkey', dest='confkey', type=str,required=False, help='confidentiality key')
     parser.add_argument('--authkey', dest='authkey', type=str,required=False, help='authentication key')
