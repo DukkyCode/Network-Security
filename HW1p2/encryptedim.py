@@ -235,7 +235,7 @@ if __name__ == '__main__':
     # Argument Handler
     parser = argparse.ArgumentParser()
     parser.add_argument("--s", dest='server', default=False, action="store_true", help="server mode", required=False)
-    parser.add_argument("--c", dest='destination', default=localhost, type=str,help="client mode", required=False)
+    parser.add_argument("--c", dest='destination', type=str,help="client mode", required=False)
 
     parser.add_argument('--confkey', dest='confkey', type=str,required=False, help='confidentiality key')
     parser.add_argument('--authkey', dest='authkey', type=str,required=False, help='authentication key')
