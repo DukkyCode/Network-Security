@@ -14,7 +14,7 @@ global privkey_path
 global pubkey_path
 
 privkey_path = './privatekey.pem'
-pubkey_path = './pubkey.pem'
+pubkey_path = './mypubkey.pem'
 
 #Padding Function 
 def mypad(somenum):
@@ -24,16 +24,17 @@ def mypad(somenum):
 class GenKey():
     def __init__(self):
         self.keypair = RSA.generate(4096)
-        
-        #Write Public Key into file
+        self.pubkey = self.keypair.public_key().export_key()
+        self.privkey = self.keypair.export_key()
+
+        #Write into the mypubkey.pem and privatekey.pem
         with open(pubkey_path, 'w') as file:
-            file.write(self.keypair.publickey().export_key().encode())
+            file.write(self.pubkey.decode())
 
-        #Write Private Key into file
+        #Write into the mypubkey.pem and privatekey.pem
         with open(privkey_path, 'w') as file:
-            file.write(self.keypair.export_key().encode())
-
-
+            file.write(self.privkey.decode())        
+        
 class SetupClient:
     def __init__(self, host, message):
         # Set up host, local port and message

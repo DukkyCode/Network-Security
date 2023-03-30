@@ -123,14 +123,12 @@ class SetupClient:
                 # If the connection is established
                 if s is self.server:
                     data = s.recv(1024).decode('utf-8')
-
-                    if data:
-                        data.strip('\n')
+                    data.strip('\n')
                         
-                        #Client compute A = (g^a) mod p
-                        self.A = pow(g, self.a, p)
-                        s.sendall(bytes(self.A + '\n', 'utf-8'))
-
+                    #Client compute A = (g^a) mod p
+                    self.A = pow(g, self.a, p)
+                    s.sendall(bytes(str(self.A) + '\n', 'utf-8'))
+                    if data:
                         #Client compute K = (B^a) mod p
                         B = int(data)
                         K = pow(B, self.A, p)
