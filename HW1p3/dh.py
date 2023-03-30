@@ -37,8 +37,7 @@ class SetupServer:
         self.b = int(random.uniform(1, p))
 
         while self.Rd:
-            readable, writable, exceptional = select.select(
-                self.Rd, self.Wd, self.Rd)
+            readable, writable, exceptional = select.select(self.Rd, self.Wd, self.Rd)
 
             for s in readable:
                 if s is self.server:
@@ -65,7 +64,7 @@ class SetupServer:
                         data = data.decode('utf-8')
                         data = data.strip('\n')
 
-                        #Server computers B = (g^b) mod p
+                        #Server compute B = (g^b) mod p
                         self.B = pow(g, self.b, p)
                         conn.sendall(bytes(str(self.B) + '\n', 'utf-8'))
 
@@ -108,42 +107,59 @@ class SetupClient:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.connect((self.host, self.port))
 
-        # Read and Write File Descriptor
-        self.Rd = [self.server, sys.stdin]
-        self.Wd = []
-
         #Generate a random a number uniformly [1, p)
         self.a = int(random.uniform(1, p))
 
-        while self.Rd:
-            readable, writable, exceptional = select.select(
-                self.Rd, self.Wd, self.Rd)
+        #Client compute A = (g^a) mod p
+        self.A = pow(g, self.a, p)
+        self.server.sendall(bytes(str(self.A) + '\n', 'utf-8'))
 
-            for s in readable:
-                # If the connection is established
-                if s is self.server:
-                    data = s.recv(1024).decode('utf-8')
-                    data.strip('\n')
+        data = self.server.recv(1024).decode('utf-8')
+        data.strip('\n')
+
+        if data:
+            #Client compute K = (B^a) mod p
+            B = int(data)
+            K = pow(B, self.a, p)
+
+            #Output and then exit
+            sys.stdout.write(str(K) + '\n')
+            sys.stdout.flush()
+            sys.exit(0)
+
+        # # Read and Write File Descriptor
+        # self.Rd = [self.server, sys.stdin]
+        # self.Wd = []
+
+        # while self.Rd:
+        #     readable, writable, exceptional = select.select(self.Rd, self.Wd, self.Rd)
+
+        #     for s in readable:
+        #         # If the connection is established
+        #         if s is self.server:
+        #             data = s.recv(1024).decode('utf-8')
+        #             data.strip('\n')
                         
-                    #Client compute A = (g^a) mod p
-                    self.A = pow(g, self.a, p)
-                    s.sendall(bytes(str(self.A) + '\n', 'utf-8'))
-                    if data:
-                        #Client compute K = (B^a) mod p
-                        B = int(data)
-                        K = pow(B, self.A, p)
+        #             #Client compute A = (g^a) mod p
+        #             self.A = pow(g, self.a, p)
+        #             s.sendall(bytes(str(self.A) + '\n', 'utf-8'))
+                    
+        #             if data:
+        #                 #Client compute K = (B^a) mod p
+        #                 B = int(data)
+        #                 K = pow(B, self.A, p)
 
-                        #Output and then exit
-                        sys.stdout.write(str(K) + '\n')
-                        sys.stdout.flush()
-                        sys.exit(0)
-                    else:
-                        sys.exit(0)
-                else:
-                    msg = s.readline()
-                    if msg == "":
-                        break
-                    self.server.sendall(msg.encode('utf-8'))
+        #                 #Output and then exit
+        #                 sys.stdout.write(str(K) + '\n')
+        #                 sys.stdout.flush()
+        #                 sys.exit(0)
+        #             else:
+        #                 sys.exit(0)
+        #         else:
+        #             msg = s.readline()
+        #             if msg == "":
+        #                 break
+        #             self.server.sendall(msg.encode('utf-8'))
 
     def handler(self, sig, frame):
         self.server.close()
