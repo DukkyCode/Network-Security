@@ -1,0 +1,16 @@
+22 (ssh) was open
+631 (ipp) was open
+11329 (NA) was open
+21518 (NA) was open
+28266 (NA) was open
+35195 (NA) was open
+36603 (NA) was open
+38510 (NA) was open
+39690 (NA) was open
+42975 (NA) was open
+45081 (NA) was open
+51554 (NA) was open
+60027 (NA) was open
+61007 (NA) was open
+time elapsed = 0.78489613533s
+time per scan = 1.19767473156e-05s

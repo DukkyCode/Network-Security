@@ -17,8 +17,8 @@ if __name__ == '__main__':
     except socket.gaierror as error:
         print "Error resolving hostname: ", e
     
-    #Create an array for the ports
-    ports_open = []
+    #Create a dictionary for the opened port
+    ports_open = {}
 
     #Initialize port min and max
     port_min = 0
@@ -32,9 +32,14 @@ if __name__ == '__main__':
         try:
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.connect((host, port))
-            ports_open.append((port, socket.getservbyport(port, 'tcp')))
-            print str(port)
+
+            #Setting the value of the dictionary
+            ports_open[port] = 0
+            ports_open[port] = socket.getservbyport(port, 'tcp')
+
+            #Closing the server
             server.close()
+
         #If getservbyport() raise an exception
         except socket.error:
             pass
@@ -48,9 +53,25 @@ if __name__ == '__main__':
     #Calculate time per scan
     scan_rate = elapsed_time / port_max
 
-    #Printing output
-    for port in ports_open:
-        print str(port[0])+ ' (' + str(port[1]) + ')' + ' was open'
+    #Post procesing the dictionary
+    for key in ports_open:
+        if ports_open[key] == 0:
+            ports_open[key] = 'NA'
+    
+    #Sorted the Element
+    sorted_ports = sorted(ports_open.items())
+
+    #Print and pipe to the txt file
+    for element in sorted_ports:
+        print str(element[0]) + ' (' + str(element[1]) + ') was open'
 
     print 'time elapsed = ' + str(elapsed_time) + 's'
     print 'time per scan = ' + str(scan_rate) + 's'
+
+    #Write to scanner.txt
+    with open('scanner.txt', 'w') as file:
+        for element in sorted_ports:
+            file.write(str(element[0]) + ' (' + str(element[1]) + ') was open\n')
+
+        file.write('time elapsed = ' + str(elapsed_time) + 's\n')
+        file.write('time per scan = ' + str(scan_rate) + 's\n')          
