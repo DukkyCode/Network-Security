@@ -18,7 +18,7 @@ def clean_exit(signum,frame):
 
 signal.signal(signal.SIGINT,clean_exit)
 
-ports = random.sample(range(2048,65535), 10)
+ports = random.sample(range(2048,65535), 100)
 sys.stdout.write(str(ports))
 sys.stdout.flush()
 out = open("opener.txt","w")
